@@ -1,3 +1,4 @@
+using AccessHub.Domain.Constants;
 using AccessHub.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -9,7 +10,7 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
     public void Configure(EntityTypeBuilder<ApplicationUser> builder)
     {
         builder.ToTable("Users");
-        builder.Property(u => u.FullName).HasMaxLength(200).IsRequired();
+        builder.Property(u => u.FullName).HasMaxLength(FieldLengths.PersonName).IsRequired();
         builder.HasOne(u => u.Organization).WithMany(o => o.Users).HasForeignKey(u => u.OrganizationId);
     }
 }

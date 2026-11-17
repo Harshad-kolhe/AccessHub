@@ -18,4 +18,12 @@ public class PermissionCodesTests
     {
         PermissionCodes.All.Should().OnlyHaveUniqueItems();
     }
+
+    [Fact]
+    public void OrganizationScoped_ExcludesOnlyThePlatformPermission()
+    {
+        PermissionCodes.OrganizationScoped.Should().NotContain(PermissionCodes.OrganizationsManage);
+        PermissionCodes.OrganizationScoped.Should().BeEquivalentTo(
+            PermissionCodes.All.Where(code => code != PermissionCodes.OrganizationsManage));
+    }
 }

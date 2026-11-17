@@ -1,0 +1,16 @@
+# Build context for the API image (the web image uses web/ as its own context).
+**/bin/
+**/obj/
+.git/
+.github/
+.vs/
+.idea/
+.env
+.env.*
+.playwright-mcp/
+docs/
+e2e/
+scripts/
+tests/
+web/
+*.md

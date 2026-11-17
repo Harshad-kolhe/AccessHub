@@ -8,13 +8,18 @@
 
 ## Node
 web/node_modules/
-web/dist/
+web/.next/
 scripts/node_modules/
 
-## Secrets (never commit)
+## Local browser-automation artifacts
+.playwright-mcp/
+
+## Secrets (never commit) - .env.example files are the committed templates
+.env
+.env.*
+!.env.example
 appsettings.*.local.json
 **/secrets.json
-web/.env
 
 ## IDE / tools
 .idea/
@@ -27,3 +32,9 @@ docs/demo/_video/
 ## OS
 Thumbs.db
 .DS_Store
+
+# Test output
+TestResults/
+e2e/node_modules/
+e2e/playwright-report/
+e2e/test-results/

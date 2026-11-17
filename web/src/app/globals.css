@@ -1,0 +1,226 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * AccessHub design tokens
+ * - Ink and paper: a blue-ink foreground on cool paper, inverted for dark mode.
+ * - Brand: one accent for actions and selection, switchable (cobalt, teal, violet, amber) via data-accent.
+ * - Granted / denied: used only for access outcomes and active/inactive state.
+ * - Bands: clearance colors that identify roles wherever they appear.
+ */
+
+@theme inline {
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-plex-condensed), var(--font-plex-sans), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-granted: var(--granted);
+  --color-granted-soft: var(--granted-soft);
+  --color-denied: var(--denied);
+  --color-denied-soft: var(--denied-soft);
+  --color-band-cobalt: #2448d8;
+  --color-band-teal: #0f8a7e;
+  --color-band-violet: #6d3fd3;
+  --color-band-amber: #c27803;
+  --color-band-rose: #c2416b;
+  --color-band-slate: #64748b;
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --animate-flip-in: flip-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes flip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-35%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+:root {
+  --ink: #14202e;
+  --paper: #f4f6f9;
+
+  /* Accent: cobalt (default). See [data-accent] below for the alternatives. */
+  --brand: #2448d8;
+  --brand-foreground: #ffffff;
+  --brand-soft: #e6ecfd;
+
+  --granted: #15803d;
+  --granted-soft: #e3f4e8;
+  --denied: #c42b2b;
+  --denied-soft: #fbe7e7;
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: #e9edf3;
+  --secondary-foreground: var(--ink);
+  --muted: #eef1f5;
+  --muted-foreground: #586477;
+  --accent: #e8edf5;
+  --accent-foreground: var(--ink);
+  --destructive: var(--denied);
+  --border: #dce2ea;
+  --input: #c9d2de;
+  --ring: var(--brand);
+  --chart-1: var(--brand);
+  --chart-2: #0f8a7e;
+  --chart-3: #6d3fd3;
+  --chart-4: #c27803;
+  --chart-5: #64748b;
+  --radius: 0.5rem;
+
+  /* The console sidebar stays ink in light mode: the control panel next to the paper workspace. */
+  --sidebar: #142030;
+  --sidebar-foreground: #c3cedc;
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: rgb(255 255 255 / 0.07);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-ring: var(--brand);
+}
+
+.dark {
+  --ink: #e5ebf2;
+  --paper: #0f1722;
+
+  --brand: #7a95ff;
+  --brand-foreground: #0b1430;
+  --brand-soft: rgb(122 149 255 / 0.14);
+
+  --granted: #4ade80;
+  --granted-soft: rgb(74 222 128 / 0.12);
+  --denied: #f87171;
+  --denied-soft: rgb(248 113 113 / 0.12);
+
+  --card: #152031;
+  --popover: #172335;
+  --secondary: #1c2939;
+  --muted: #1a2636;
+  --muted-foreground: #95a3b6;
+  --accent: #1f2d40;
+  --border: #243245;
+  --input: #30405a;
+
+  --sidebar: #0b121b;
+  --sidebar-foreground: #b6c2d1;
+}
+
+/* Accent presets (chosen in the appearance menu, stored per browser). */
+[data-accent="teal"] {
+  --brand: #0f766e;
+  --brand-foreground: #ffffff;
+  --brand-soft: #ddf3f0;
+}
+[data-accent="violet"] {
+  --brand: #6d28d9;
+  --brand-foreground: #ffffff;
+  --brand-soft: #eee7fc;
+}
+[data-accent="amber"] {
+  --brand: #b45309;
+  --brand-foreground: #ffffff;
+  --brand-soft: #fbefd9;
+}
+.dark[data-accent="teal"] {
+  --brand: #2dd4bf;
+  --brand-foreground: #052e2a;
+  --brand-soft: rgb(45 212 191 / 0.14);
+}
+.dark[data-accent="violet"] {
+  --brand: #a78bfa;
+  --brand-foreground: #1e1238;
+  --brand-soft: rgb(167 139 250 / 0.14);
+}
+.dark[data-accent="amber"] {
+  --brand: #fbbf24;
+  --brand-foreground: #2a1a00;
+  --brand-soft: rgb(251 191 36 / 0.14);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    font-feature-settings: "ss02";
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

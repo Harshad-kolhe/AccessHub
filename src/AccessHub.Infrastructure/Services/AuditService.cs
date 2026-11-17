@@ -4,16 +4,9 @@ using AccessHub.Domain.Entities;
 
 namespace AccessHub.Infrastructure.Services;
 
-public class AuditService(IAccessHubDbContext db) : IAuditService
+public class AuditService(IAccessHubDbContext db, TimeProvider clock) : IAuditService
 {
-    public async Task LogAsync(
-        Guid actorUserId,
-        Guid? organizationId,
-        string action,
-        string entityType,
-        string? entityId,
-        object? payload = null,
-        CancellationToken cancellationToken = default)
+    public void Record(Guid actorUserId, Guid? organizationId, string action, string entityType, string? entityId, object? payload = null)
     {
         db.AuditEvents.Add(new AuditEvent
         {
@@ -24,9 +17,20 @@ public class AuditService(IAccessHubDbContext db) : IAuditService
             EntityType = entityType,
             EntityId = entityId,
             PayloadJson = payload is null ? null : JsonSerializer.Serialize(payload),
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = clock.GetUtcNow().UtcDateTime
         });
+    }
 
+    public async Task LogAsync(
+        Guid actorUserId,
+        Guid? organizationId,
+        string action,
+        string entityType,
+        string? entityId,
+        object? payload = null,
+        CancellationToken cancellationToken = default)
+    {
+        Record(actorUserId, organizationId, action, entityType, entityId, payload);
         await db.SaveChangesAsync(cancellationToken);
     }
 }
