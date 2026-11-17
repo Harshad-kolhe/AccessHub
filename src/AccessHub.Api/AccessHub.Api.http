@@ -1,6 +1,24 @@
-@AccessHub.Api_HostAddress = http://localhost:5177
+# Requests for the Visual Studio / VS Code / Rider HTTP client.
+# Start the API first: dotnet run --project src/AccessHub.Api
+@baseUrl = http://localhost:5177
 
-GET {{AccessHub.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Sign in as the seeded org admin; the requests below reuse the token from this response
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
 
-###
+{ "email": "admin@acme.local", "password": "Admin123!" }
+
+### Protected endpoint (requires invoices.read)
+GET {{baseUrl}}/api/invoices
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Validation failure: 400 ValidationProblemDetails, nothing is saved
+POST {{baseUrl}}/api/invoices
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{ "number": "INV-100", "customerName": "Contoso", "amount": -5 }
+
+### No token: 401
+GET {{baseUrl}}/api/invoices

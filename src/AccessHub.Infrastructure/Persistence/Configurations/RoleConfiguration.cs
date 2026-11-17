@@ -1,3 +1,4 @@
+using AccessHub.Domain.Constants;
 using AccessHub.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,7 +11,7 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
     {
         builder.ToTable("Roles");
         builder.HasKey(r => r.Id);
-        builder.Property(r => r.Name).HasMaxLength(100).IsRequired();
+        builder.Property(r => r.Name).HasMaxLength(FieldLengths.RoleName).IsRequired();
         builder.HasIndex(r => new { r.OrganizationId, r.Name }).IsUnique();
         builder.HasOne(r => r.Organization).WithMany(o => o.Roles).HasForeignKey(r => r.OrganizationId);
     }

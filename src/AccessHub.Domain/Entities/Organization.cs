@@ -6,6 +6,8 @@ public class Organization
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    /// <summary>Brand accent for the console (cobalt, teal, violet or amber); users can still pick their own.</summary>
+    public string? Accent { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public ICollection<ApplicationUser> Users { get; set; } = [];

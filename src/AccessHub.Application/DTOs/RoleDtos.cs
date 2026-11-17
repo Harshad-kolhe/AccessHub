@@ -5,10 +5,13 @@ public record RoleDto(
     Guid OrganizationId,
     string Name,
     string? Description,
-    IReadOnlyList<string> PermissionCodes);
+    IReadOnlyList<string> PermissionCodes,
+    int UserCount);
 
 public record CreateRoleRequest(string Name, string? Description, IReadOnlyList<string> PermissionCodes);
 
 public record UpdateRoleRequest(string Name, string? Description, IReadOnlyList<string> PermissionCodes);
 
 public record PermissionDto(Guid Id, string Code, string DisplayName, string? Description);
+
+public record RealtimeTicketDto(string Ticket, DateTime ExpiresAtUtc, string HubPath);

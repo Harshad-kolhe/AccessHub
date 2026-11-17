@@ -13,5 +13,8 @@ public interface IAccessHubDbContext
     DbSet<UserRole> OrgUserRoles { get; }
     DbSet<AuditEvent> AuditEvents { get; }
     DbSet<Invoice> Invoices { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<SignInAttempt> SignInAttempts { get; }
+    DbSet<AccessRequest> AccessRequests { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

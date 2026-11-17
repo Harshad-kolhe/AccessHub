@@ -9,6 +9,7 @@ public class ApplicationUser : IdentityUser<Guid>
     public bool IsActive { get; set; } = true;
     public bool IsSuperAdmin { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? LastSignInAtUtc { get; set; }
 
     public Organization? Organization { get; set; }
     public ICollection<UserRole> UserRoles { get; set; } = [];

@@ -22,4 +22,10 @@ public static class PermissionCodes
         InvoicesRead,
         InvoicesWrite
     ];
+
+    /// <summary>
+    /// Permissions an organization's roles may grant. <see cref="OrganizationsManage"/> is platform-wide
+    /// (it can read and change every tenant), so it is reserved for super admins and never granted by an org role.
+    /// </summary>
+    public static readonly string[] OrganizationScoped = All.Where(code => code != OrganizationsManage).ToArray();
 }

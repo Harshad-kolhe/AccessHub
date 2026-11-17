@@ -1,3 +1,4 @@
+using AccessHub.Domain.Constants;
 using AccessHub.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,8 +11,9 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
     {
         builder.ToTable("Organizations");
         builder.HasKey(o => o.Id);
-        builder.Property(o => o.Name).HasMaxLength(200).IsRequired();
-        builder.Property(o => o.Slug).HasMaxLength(100).IsRequired();
+        builder.Property(o => o.Name).HasMaxLength(FieldLengths.OrganizationName).IsRequired();
+        builder.Property(o => o.Slug).HasMaxLength(FieldLengths.OrganizationSlug).IsRequired();
         builder.HasIndex(o => o.Slug).IsUnique();
+        builder.Property(o => o.Accent).HasMaxLength(FieldLengths.Accent);
     }
 }
