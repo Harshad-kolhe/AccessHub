@@ -1,13 +1,69 @@
+# The whole stack with one command:  docker compose up --build
+#   Console:        http://localhost:3000   (demo badges on the sign-in page)
+#   API reference:  http://localhost:5177/scalar
+#   Test inbox:     http://localhost:5000   (smtp4dev catches invitation and password-reset emails)
+# MSSQL_SA_PASSWORD comes from the repo-root .env (copy .env.example). To run only SQL Server for local
+# development:  docker compose up -d sqlserver
+name: accesshub
+
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "AccessHub_Strong_Pass123!"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env (copy .env.example)}
     ports:
       - "1433:1433"
     volumes:
       - accesshub-sql:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  smtp4dev:
+    image: rnwood/smtp4dev:v3
+    ports:
+      - "5000:80"
+
+  api:
+    build:
+      context: .
+      dockerfile: src/AccessHub.Api/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      smtp4dev:
+        condition: service_started
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=AccessHub;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
+      Jwt__Key: ${JWT_KEY:-compose-only-signing-key-change-me-0123456789}
+      App__WebBaseUrl: http://localhost:3000
+      Cors__Origins__0: http://localhost:3000
+      # The web container forwards browser addresses; trust Docker's private networks for X-Forwarded-For.
+      ForwardedHeaders__TrustedNetworks__0: 172.16.0.0/12
+      ForwardedHeaders__TrustedNetworks__1: 192.168.0.0/16
+      Email__Smtp__Host: smtp4dev
+      Email__Smtp__Port: "25"
+      OpenApi__Enabled: "true"
+      # Sign-in attempts per minute per address (CI raises it: the end-to-end suite signs in a lot).
+      RateLimiting__AuthPermitPerMinute: ${AUTH_RATE_LIMIT:-20}
+    ports:
+      - "5177:8080"
+
+  web:
+    build:
+      context: ./web
+    depends_on:
+      - api
+    environment:
+      API_URL: http://api:8080
+      PUBLIC_API_URL: http://localhost:5177
+      COOKIE_SECURE: "false"
+    ports:
+      - "3000:3000"
 
 volumes:
   accesshub-sql:
