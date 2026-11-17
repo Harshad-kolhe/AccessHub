@@ -36,7 +36,19 @@ export function cookieOptions(extra: Partial<CookieOptions> = {}): CookieOptions
 export function writeSessionCookies(jar: CookieWriter, tokens: SessionTokens): void {
   jar.set(SESSION_COOKIE, tokens.accessToken, cookieOptions({ expires: parseUtc(tokens.accessTokenExpiresAtUtc) }));
   jar.set(REFRESH_COOKIE, tokens.refreshToken, cookieOptions({ expires: parseUtc(tokens.refreshTokenExpiresAtUtc) }));
-  jar.set(REFRESHED_COOKIE, '1', cookieOptions({ maxAge: 10 }));
+}
+
+/** A short, unique tag for one access token (the end of its signature), for the refresh-loop guard. */
+export function tokenTag(accessToken: string): string {
+  return accessToken.slice(-16);
+}
+
+/**
+ * Remembers which token /auth/refresh just issued. If the API rejects that very token, renewing again would
+ * loop, so the next rejection signs the user out instead. Any other rejected token simply renews.
+ */
+export function markRenewedToken(jar: CookieWriter, accessToken: string): void {
+  jar.set(REFRESHED_COOKIE, tokenTag(accessToken), cookieOptions({ maxAge: 60 }));
 }
 
 export function clearSessionCookies(jar: CookieWriter): void {
