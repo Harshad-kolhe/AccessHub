@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { signInWithBadge } from './helpers';
+import { sidebar, signInWithBadge } from './helpers';
 
 test('the console is closed to visitors who are not signed in', async ({ page }) => {
   await page.goto('/app/users');
@@ -10,9 +10,11 @@ test('the org admin sees and can change everything in their organization', async
   await signInWithBadge(page, 'org-admin');
   await expect(page.getByText('Waiting for a decision', { exact: true })).toBeVisible();
 
-  await page.getByRole('link', { name: 'People' }).click();
+  // The dashboard's People card is a link too, so go through the sidebar.
+  await sidebar(page).getByRole('link', { name: 'People', exact: true }).click();
+  await expect(page).toHaveURL(/\/app\/users$/);
   await expect(page.getByRole('button', { name: 'Invite person' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Organizations' })).toHaveCount(0);
+  await expect(sidebar(page).getByRole('link', { name: 'Organizations' })).toHaveCount(0);
 });
 
 test('the viewer reads but is offered access requests instead of write actions', async ({ page }) => {
@@ -27,9 +29,12 @@ test('the viewer reads but is offered access requests instead of write actions',
 
 test('the super admin oversees every organization', async ({ page }) => {
   await signInWithBadge(page, 'super-admin');
-  await page.getByRole('link', { name: 'Organizations' }).click();
-  await expect(page.getByText('Blue Harbor Logistics').first()).toBeVisible();
-  await expect(page.getByText('Acme Corp').first()).toBeVisible();
+  await sidebar(page).getByRole('link', { name: 'Organizations' }).click();
+  await expect(page).toHaveURL(/\/app\/organizations$/);
+  // At desktop width the table is shown (the phone card list is hidden).
+  const table = page.getByRole('table');
+  await expect(table.getByRole('cell', { name: 'Blue Harbor Logistics', exact: true })).toBeVisible();
+  await expect(table.getByRole('cell', { name: 'Acme Corp', exact: true })).toBeVisible();
 });
 
 test('a wrong password says so without revealing whether the account exists', async ({ page }) => {

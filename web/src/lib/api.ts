@@ -2,8 +2,9 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { API_URL } from './config';
-import { PATH_HEADER, REFRESHED_COOKIE } from './jwt';
+import { PATH_HEADER, REFRESHED_COOKIE, SESSION_COOKIE } from './jwt';
 import { getSessionToken, refreshCurrentSession } from './session';
+import { tokenTag } from './session-cookies';
 import type { ActionResult } from './types';
 
 export const API_UNREACHABLE = 'The AccessHub API is not reachable. Check that it is running.';
@@ -56,8 +57,10 @@ export async function apiGet<T>(path: string): Promise<ApiReadResult<T>> {
 }
 
 async function renewAndReturn(): Promise<never> {
-  // Just refreshed and still rejected: the session is over, don't loop.
-  if ((await cookies()).get(REFRESHED_COOKIE)) redirect(SESSION_EXPIRED);
+  // The token /auth/refresh just issued is rejected too: the session is over, so don't loop.
+  const jar = await cookies();
+  const token = jar.get(SESSION_COOKIE)?.value;
+  if (token && jar.get(REFRESHED_COOKIE)?.value === tokenTag(token)) redirect(SESSION_EXPIRED);
   const path = (await headers()).get(PATH_HEADER) ?? '/app';
   redirect(`/auth/refresh?next=${encodeURIComponent(path)}`);
 }

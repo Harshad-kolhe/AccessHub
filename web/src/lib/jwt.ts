@@ -4,7 +4,7 @@ export const SESSION_COOKIE = 'accesshub_token';
 export const REFRESH_COOKIE = 'accesshub_refresh';
 /** httpOnly cookie holding the two-factor challenge between the password step and the code step (5 minutes). */
 export const CHALLENGE_COOKIE = 'accesshub_2fa';
-/** Set for a few seconds after a refresh, so a token the API still rejects can't cause a refresh loop. */
+/** Tags the token /auth/refresh last issued: if the API rejects that very token, the session is over (no loop). */
 export const REFRESHED_COOKIE = 'accesshub_refreshed';
 /** Request header the proxy adds so Server Components know the path to come back to after a refresh. */
 export const PATH_HEADER = 'x-accesshub-path';

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { REFRESH_COOKIE, safeNext } from '@/lib/jwt';
-import { clearSessionCookies, forwardedFor, requestRefresh, writeSessionCookies } from '@/lib/session-cookies';
+import { clearSessionCookies, forwardedFor, markRenewedToken, requestRefresh, writeSessionCookies } from '@/lib/session-cookies';
 
 /**
  * A page's API call was rejected (the token expired, or was revoked because the user's roles changed). Server
@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   if (outcome.status === 'ok') {
     const response = NextResponse.redirect(new URL(next, request.url));
     writeSessionCookies(response.cookies, outcome.auth.tokens);
+    markRenewedToken(response.cookies, outcome.auth.tokens.accessToken);
     return response;
   }
 

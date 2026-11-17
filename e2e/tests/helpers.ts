@@ -18,6 +18,11 @@ export async function newSession(browser: Browser, account: DemoAccount, baseURL
   return { context, page };
 }
 
+/** The console's sidebar navigation (links elsewhere on a page can share its names). */
+export function sidebar(page: Page) {
+  return page.locator('[data-sidebar="sidebar"]:visible');
+}
+
 /** Waits until the realtime connection is up (the "Live" pill in the header). */
 export async function waitForLive(page: Page) {
   await expect(page.getByRole('status').filter({ hasText: 'Live' })).toBeVisible({ timeout: 20_000 });
