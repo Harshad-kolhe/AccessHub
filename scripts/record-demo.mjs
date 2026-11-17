@@ -1,93 +1,121 @@
 /**
- * Records an AccessHub UI walkthrough and saves docs/demo/accesshub-demo.gif
- * Requires API (5177) and Web (5173) to be running.
+ * Records an AccessHub walkthrough and saves docs/demo/accesshub-demo.gif.
+ * Needs the API and the web app running on fresh demo data (see docs/DEMO_RECORDING.md):
+ *   cd scripts && npm install && npx playwright install chromium && npm run record
+ *
+ * The story: an access request arrives live while the admin watches the dashboard (a teammate sends it through
+ * the API in the background), the admin approves it for a week, flips a permission in the matrix and undoes it,
+ * asks the access checker a question, and jumps to a person with Ctrl+K.
  */
-import { mkdir, rm } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
+import { readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import ffmpegPath from 'ffmpeg-static';
+import { chromium } from 'playwright';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'docs', 'demo');
 const videoDir = path.join(outDir, '_video');
-const webmPath = path.join(videoDir, 'recording.webm');
 const gifPath = path.join(outDir, 'accesshub-demo.gif');
 
-const WEB_URL = process.env.WEB_URL ?? 'http://localhost:5173';
+const WEB_URL = process.env.WEB_URL ?? 'http://localhost:3000';
+const API_URL = process.env.API_URL ?? 'http://localhost:5177';
 const VIEWPORT = { width: 1280, height: 720 };
 
-async function wait(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** The viewer asks for the Billing role, through the API, as if from another computer. */
+async function viewerRequestsBilling() {
+  const login = await fetch(`${API_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'viewer@acme.local', password: 'Viewer123!' }),
+  });
+  const { tokens } = await login.json();
+  const auth = { Authorization: `Bearer ${tokens.accessToken}`, 'Content-Type': 'application/json' };
+  const options = await (await fetch(`${API_URL}/api/access-requests/options?permission=invoices.write`, { headers: auth })).json();
+  const billing = options.find((role) => role.name === 'Billing');
+  const response = await fetch(`${API_URL}/api/access-requests`, {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({ roleId: billing.id, permission: 'invoices.write', reason: 'Covering quarter-end invoicing while Priya is away.' }),
+  });
+  if (!response.ok) throw new Error(`The access request failed: ${response.status} ${await response.text()}`);
 }
 
-async function login(page, email, password) {
-  await page.goto(`${WEB_URL}/login`);
-  await page.waitForLoadState('networkidle');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: 'Sign In' }).click();
-  await page.waitForURL(/\/(?!login)/);
-  await wait(800);
-}
-
-async function recordDemo() {
-  await rm(outDir, { recursive: true, force: true });
-  await mkdir(videoDir, { recursive: true });
-
+async function record() {
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    viewport: VIEWPORT,
-    recordVideo: { dir: videoDir, size: VIEWPORT },
+  const context = await browser.newContext({ viewport: VIEWPORT, colorScheme: 'light', recordVideo: { dir: videoDir, size: VIEWPORT } });
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem('theme', 'light');
+      localStorage.removeItem('accesshub-accent');
+    } catch {}
   });
   const page = await context.newPage();
 
-  // --- Admin flow ---
-  await login(page, 'admin@acme.local', 'Admin123!');
-  await wait(1200);
-
-  await page.getByRole('link', { name: 'Roles' }).click();
+  // Sign in with a demo badge.
+  await page.goto(`${WEB_URL}/login`);
   await wait(1500);
-
-  await page.getByRole('link', { name: 'Invoices' }).click();
-  await wait(1500);
-
-  await page.getByRole('link', { name: 'Audit Log' }).click();
-  await wait(1500);
-
-  await page.getByRole('link', { name: 'Users' }).click();
-  await wait(1200);
-
-  await page.getByRole('button', { name: 'Logout' }).click();
-  await page.waitForURL(/login/);
+  await page.locator('button[value="org-admin"]').hover();
   await wait(600);
+  await page.locator('button[value="org-admin"]').click();
+  await page.waitForURL('**/app');
+  await page.getByText('Live', { exact: true }).waitFor({ timeout: 20000 });
+  await wait(2200);
 
-  // --- Viewer flow (read-only) ---
-  await login(page, 'viewer@acme.local', 'Viewer123!');
-  await wait(1000);
-
-  await page.getByRole('link', { name: 'Invoices' }).click();
-  await wait(2000); // no "New Invoice" button for viewer
-
-  await page.getByRole('link', { name: 'Roles' }).click();
+  // A request arrives while the admin is looking at the dashboard.
+  await viewerRequestsBilling();
+  await page.getByText('Acme Viewer asked for Billing').waitFor();
+  await wait(1800);
+  await page.getByRole('button', { name: 'Review' }).click();
+  await page.waitForURL('**/app/access-requests');
   await wait(1500);
+  const card = page.locator('li').filter({ hasText: 'quarter-end invoicing' });
+  await card.getByRole('button', { name: 'Approve' }).click();
+  await wait(900);
+  await page.getByRole('radio', { name: '1 week' }).click();
+  await wait(700);
+  await page.getByLabel(/Note for/).pressSequentially('Until Priya is back.', { delay: 45 });
+  await wait(500);
+  await page.getByRole('dialog').getByRole('button', { name: 'Approve' }).click();
+  await page.getByText(/Acme Viewer now has Billing until/).waitFor();
+  await wait(2200);
 
-  await wait(800);
+  // The permission matrix: change a role, then undo it.
+  await page.getByRole('link', { name: 'Permission matrix' }).click();
+  await page.waitForURL('**/app/roles/matrix');
+  await wait(1400);
+  await page.getByRole('checkbox', { name: 'Support: invoices.read' }).click();
+  await page.getByText('Added invoices.read to Support').waitFor();
+  await wait(1300);
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await wait(1800);
+
+  // The access checker: can the viewer create invoices now?
+  await page.getByRole('link', { name: 'Access checker' }).click();
+  await page.waitForURL('**/app/access-checker');
+  await page.getByRole('combobox', { name: 'Person' }).click();
+  await wait(500);
+  await page.getByRole('option', { name: /Acme Viewer/ }).click();
+  await page.getByRole('combobox', { name: 'Permission' }).click();
+  await wait(500);
+  await page.getByRole('option', { name: /Create invoices/ }).click();
+  await page.getByText('Allowed', { exact: true }).waitFor();
+  await wait(2600);
+
+  // Ctrl+K: jump to anyone or anything.
+  await page.keyboard.press('Control+k');
+  await wait(500);
+  await page.getByPlaceholder('Type a page, an action or a name…').pressSequentially('audit', { delay: 90 });
+  await wait(900);
+  await page.keyboard.press('Enter');
+  await page.waitForURL('**/app/audit');
+  await wait(2500);
+
   await context.close();
   await browser.close();
-
-  // Playwright names the file arbitrarily — find the .webm
-  const { readdir } = await import('node:fs/promises');
-  const files = await readdir(videoDir);
-  const webm = files.find((f) => f.endsWith('.webm'));
-  if (!webm) throw new Error('No webm recording found');
-  const recordedPath = path.join(videoDir, webm);
-
-  await convertToGif(recordedPath, gifPath);
-  await rm(videoDir, { recursive: true, force: true });
-  console.log(`\nDemo GIF saved: ${gifPath}`);
 }
 
 function convertToGif(input, output) {
@@ -95,7 +123,7 @@ function convertToGif(input, output) {
     const args = [
       '-y',
       '-i', input,
-      '-vf', 'fps=12,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer',
+      '-vf', 'fps=10,scale=960:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer',
       '-loop', '0',
       output,
     ];
@@ -104,28 +132,25 @@ function convertToGif(input, output) {
   });
 }
 
-async function waitForServer(url, attempts = 60) {
-  for (let i = 0; i < attempts; i++) {
+async function waitFor(url) {
+  for (let attempt = 0; attempt < 60; attempt++) {
     try {
-      const res = await fetch(url);
-      if (res.status > 0 && res.status < 500) return;
+      if ((await fetch(url)).status < 500) return;
     } catch {
-      /* retry */
+      // not up yet
     }
     await wait(500);
   }
-  throw new Error(`Service not reachable: ${url}`);
+  throw new Error(`Not reachable: ${url}`);
 }
 
-async function main() {
-  console.log('Waiting for API and Web...');
-  await waitForServer('http://localhost:5177/api/permissions'); // 401 = API is up
-  await waitForServer(WEB_URL);
-  console.log('Recording demo...');
-  await recordDemo();
-}
+await waitFor(`${API_URL}/health`);
+await waitFor(`${WEB_URL}/login`);
+await rm(videoDir, { recursive: true, force: true });
+await record();
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const webm = (await readdir(videoDir)).find((file) => file.endsWith('.webm'));
+if (!webm) throw new Error('No recording found');
+await convertToGif(path.join(videoDir, webm), gifPath);
+await rm(videoDir, { recursive: true, force: true });
+console.log(`Demo GIF saved: ${gifPath}`);

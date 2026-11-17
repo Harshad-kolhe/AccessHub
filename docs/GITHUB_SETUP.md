@@ -1,94 +1,43 @@
-# GitHub setup for AccessHub
+# GitHub repository settings
 
-## 1. Local repository (already done if you ran setup)
+The repository is at https://github.com/Harshad-kolhe/AccessHub. These settings make it read well as a portfolio project.
 
-```powershell
-cd d:\IAM
-git init
-git add .
-git commit -m "Initial commit: AccessHub IAM portfolio (NET 8 + React)"
-```
+## About (the box on the right of the repository page)
 
-## 2. Create the GitHub repository
+- **Description:** `Multi-tenant IAM for B2B SaaS: ASP.NET Core 10 API + Next.js 16 console. RBAC, rotating refresh tokens, 2FA, access requests with temporary roles, SignalR, audit log.`
+- **Website:** the live demo's URL, once deployed (see [DEPLOYMENT.md](DEPLOYMENT.md)).
+- **Topics:** `aspnet-core`, `dotnet`, `csharp`, `nextjs`, `react`, `typescript`, `rbac`, `iam`, `authentication`, `authorization`, `jwt`, `multi-tenant`, `entity-framework-core`, `sql-server`, `signalr`, `hangfire`, `shadcn-ui`, `tailwindcss`, `playwright`, `docker`
 
-### Option A — GitHub website (recommended)
-
-1. Sign in at [https://github.com](https://github.com)
-2. Click **+** → **New repository**
-3. Settings:
-   - **Repository name:** `AccessHub` (or `accesshub-iam`)
-   - **Description:** `Multi-tenant RBAC admin API (.NET 8) + React — IAM portfolio project`
-   - **Public**
-   - Do **not** add README, .gitignore, or license (they already exist locally)
-4. Click **Create repository**
-
-### Option B — GitHub CLI (after installing)
+With the GitHub CLI (`winget install GitHub.cli`, then `gh auth login`):
 
 ```powershell
-winget install GitHub.cli
-gh auth login
-cd d:\IAM
-gh repo create AccessHub --public --source=. --remote=origin --push
+gh repo edit Harshad-kolhe/AccessHub `
+  --description "Multi-tenant IAM for B2B SaaS: ASP.NET Core 10 API + Next.js 16 console. RBAC, rotating refresh tokens, 2FA, access requests with temporary roles, SignalR, audit log." `
+  --add-topic aspnet-core,dotnet,csharp,nextjs,react,typescript,rbac,iam,authentication,authorization,jwt,multi-tenant,entity-framework-core,sql-server,signalr,hangfire,shadcn-ui,tailwindcss,playwright,docker
 ```
 
-## 3. Connect remote and push
+## Continuous integration
 
-Repository URL for this project:
+[.github/workflows/ci.yml](../.github/workflows/ci.yml) runs on every push to `main` and on pull requests:
+
+| Job | Steps |
+|---|---|
+| API build and tests | Restore, build with warnings as errors, unit and integration tests (SQL Server through Testcontainers), vulnerable-package check |
+| Web lint, types and build | `npm ci`, ESLint, `tsc --noEmit`, `next build`, `npm audit` on production dependencies |
+| End-to-end | `docker compose up --build`, wait for health, Playwright tests; the report is uploaded when something fails |
+
+The README's CI badge shows the latest result on `main`.
+
+## Branch protection (recommended)
+
+In **Settings, Branches**, protect `main`: require a pull request and the three CI checks before merging. Work then happens on branches:
 
 ```powershell
-cd d:\IAM
-git branch -M main
-git remote add origin https://github.com/Harshad1732/AccessHub.git
-git push -u origin main
+git switch -c feature/my-change
+git push -u origin feature/my-change
+gh pr create --fill
 ```
 
-If you use SSH:
+## Pinned repository
 
-```powershell
-git remote add origin git@github.com:Harshad1732/AccessHub.git
-git push -u origin main
-```
-
-GitHub may prompt for login. Use a **Personal Access Token** as the password if using HTTPS ([create token](https://github.com/settings/tokens) with `repo` scope).
-
-## 4. Polish the repo page
-
-On GitHub → **Settings** → General:
-
-- Add topics: `dotnet`, `aspnet-core`, `rbac`, `jwt`, `react`, `typescript`, `ef-core`, `portfolio`
-- Pin the repository on your profile (optional)
-
-In **About** (right sidebar on repo home):
-
-- Website: leave blank or add demo URL later
-- Description: same as above
-
-## 5. README badge (optional)
-
-Add to the top of `README.md` after pushing:
-
-```markdown
-![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)
-![React](https://img.shields.io/badge/React-18-61DAFB)
-![License](https://img.shields.io/badge/license-MIT-green)
-```
-
-## 6. Put on resume / LinkedIn
-
-```
-https://github.com/Harshad1732/AccessHub
-```
-
-## Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| `remote origin already exists` | `git remote set-url origin <new-url>` |
-| `failed to push` / auth | Use PAT or `gh auth login` |
-| Large files rejected | Ensure `web/node_modules` is in `.gitignore` |
-| Secrets committed by mistake | Rotate JWT key; use `git rm --cached` for sensitive files |
-
-## Security reminder
-
-- Never commit `web/.env` or production connection strings
-- Change `Jwt:Key` in production; use GitHub Secrets for CI/CD later
+On your profile, **Customize your pins** and pin AccessHub, so it is the first thing visitors see.
